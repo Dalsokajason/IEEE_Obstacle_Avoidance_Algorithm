@@ -12,17 +12,18 @@ struct Point {
     int row, col;
 };
 
-// Structure to hold data for the priority queue
+// Structure to hold data for the priority queue for the A* algorithm
 struct AStarNode {
     int row, col;
     int f_score;
 
-    // Min-heap comparison: we want the lowest f_score at the top
+    // A heap that will store lowest score at top, so we need to define the comparison operator
     bool operator>(const AStarNode& other) const {
         return f_score > other.f_score;
     }
 };
 
+//declarations so code works
 void generateRandomObstacle(vector<vector<int>>& mapMatrix);
 int heuristic(int r1, int c1, int r2, int c2);
 vector<Point> a_star_occupancy_grid(vector<vector<int>>& mapMatrix, Point start, Point goal);
@@ -49,22 +50,25 @@ int main(){
         cout << "Obstacle " << i + 1 << " generated." << endl;
     }
 
+    //set the start and goal points for the A* algorithm the point is structured as {row, col}
     Point start = {rows/2, 0};
     Point goal = {rows/2, cols - 1};
 
     vector<Point> path = a_star_occupancy_grid(mapMatrix, start, goal);
 
+    //print out the path found by the A* algorithm
     if (path.empty()) {
         cout << "No path found!" << endl;
     } else {
         cout << "Path found: " << endl;
         for (const auto& pt : path) {
-            mapMatrix[pt.row][pt.col] = 7; // Mark path on the map
+            mapMatrix[pt.row][pt.col] = 7; // Mark path on the map as 7s
             cout << "(" << pt.row << ", " << pt.col << ") -> ";
         }
         cout << "Goal" << endl;
     }
 
+    //print out the matrix
     for(int i = 0; i < rows; i++){
         for (int j = 0; j < cols; j++){
             std::cout << mapMatrix[i][j] << " ";
@@ -91,7 +95,7 @@ void generateRandomObstacle(vector<vector<int>>& mapMatrix) {
     
     cout << "x = " << x << ", y = " << y << endl;
     // Obstacle position is set to x and y coord, but -1 on each to account for 0 indexing in the matrix
-    mapMatrix[static_cast<int>(rows/2 + (round(y) - 1))][static_cast<int>(round(x) - 1)] = 1;
+    mapMatrix[static_cast<int>(rows/2 + (round(y) - 1))][static_cast<int>(round(x) - 1)] = 1; // 1 denotes an obstacle
 }
 
 #include <iostream>
