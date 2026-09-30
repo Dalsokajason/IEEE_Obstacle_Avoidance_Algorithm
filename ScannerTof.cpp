@@ -45,7 +45,7 @@ int main(){
     mapMatrix[rows/2][0] = 2; // Start point
     mapMatrix[rows/2][cols - 1] = 2; // Goal
     
-    for(int i = 0; i < 300; i++){
+    for(int i = 0; i < 150; i++){
         generateRandomObstacle(mapMatrix);
         cout << "Obstacle " << i + 1 << " generated." << endl;
     }
@@ -64,6 +64,8 @@ int main(){
         for (const auto& pt : path) {
             mapMatrix[pt.row][pt.col] = 7; // Mark path on the map as 7s
             cout << "(" << pt.row << ", " << pt.col << ") -> ";
+            //wait for 1 second before printing the next point
+            std::this_thread::sleep_for(std::chrono::seconds(1));
         }
         cout << "Goal" << endl;
     }
@@ -76,16 +78,17 @@ int main(){
         std::cout << std::endl;
     }
     
+
     return 0;
 }
 
 void generateRandomObstacle(vector<vector<int>>& mapMatrix) {
     int rows = mapMatrix.size();
     int cols = mapMatrix[0].size();
-    double min_distance = 10.0;
-    double max_distance = 20.0;
-    double min_angle = -45.0;
-    double max_angle = 45.0;
+    double min_distance = 20.0;
+    double max_distance = 35.0;
+    double min_angle = -15.0;
+    double max_angle = 15.0;
     double distance = min_distance + static_cast<double>(std::rand()) / (static_cast<double>(RAND_MAX) / (max_distance - min_distance));
     double angle = min_angle + static_cast<double>(std::rand()) / (static_cast<double>(RAND_MAX) / (max_angle - min_angle));
     double pi = 3.14159265358979323846;
@@ -107,6 +110,11 @@ void generateRandomObstacle(vector<vector<int>>& mapMatrix) {
 // Manhattan distance heuristic
 int heuristic(int r1, int c1, int r2, int c2) {
     return std::abs(r1 - r2) + std::abs(c1 - c2);
+}
+
+//Euclidean distance heuristic
+double euclidean_heuristic(int r1, int c1, int r2, int c2) {
+    return std::sqrt(std::pow(r1 - r2, 2) + std::pow(c1 - c2, 2));
 }
 
 // Main A* Search algorithm for an occupancy grid
@@ -168,7 +176,7 @@ std::vector<Point> a_star_occupancy_grid(vector<vector<int>>& mapMatrix, Point s
                 // 3. Evaluation Check
                 if (cost_so_far[next_idx] == -1 || new_cost < cost_so_far[next_idx]) {
                     cost_so_far[next_idx] = new_cost;
-                    int f_score = new_cost + heuristic(next_r, next_c, goal.row, goal.col);
+                    int f_score = new_cost + euclidean_heuristic(next_r, next_c, goal.row, goal.col);
                     
                     frontier.push({next_r, next_c, f_score});
                     came_from[next_idx] = current_idx;
@@ -188,4 +196,28 @@ std::vector<Point> a_star_occupancy_grid(vector<vector<int>>& mapMatrix, Point s
     }
     std::reverse(path.begin(), path.end());
     return path;
+}
+
+class Robot {
+    private:
+        Point position;
+        double orientation; // in degrees
+
+    public:
+        Robot(Point startPos, double startOrientation) {
+            //start position will be manually given for now, but will be fed from the imu in the future
+            position = startPos;
+            //we will feed this info from the imu
+            orientation = startOrientation;
+        }
+    
+    void stepTo(Point newPos) {
+        //the robot will move to the new position but will need to reorient itself first based on the angle to the new position and then move forward to the new position
+        // Implementation for reorientation and movement
+        orientation = atan2(newPos.row - position.row, newPos.col - position.col) * (180.0 / 3.14159265358979323846);
+        //move + 1 in the direction of the new position.
+        position = point{position.row + (newPos.row - position.row) / std::max(1, std::abs(newPos.row - position.row)), 
+                         position.col + (newPos.col - position.col) / std::max(1, std::abs(newPos.col - position.col))};
+    }
+
 }
