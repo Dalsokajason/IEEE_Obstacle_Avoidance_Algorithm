@@ -65,7 +65,7 @@ int main(){
             mapMatrix[pt.row][pt.col] = 7; // Mark path on the map as 7s
             cout << "(" << pt.row << ", " << pt.col << ") -> ";
             //wait for 1 second before printing the next point
-            std::this_thread::sleep_for(std::chrono::seconds(1));
+            //std::this_thread::sleep_for(std::chrono::seconds(1));
         }
         cout << "Goal" << endl;
     }
@@ -86,7 +86,7 @@ void generateRandomObstacle(vector<vector<int>>& mapMatrix) {
     int rows = mapMatrix.size();
     int cols = mapMatrix[0].size();
     double min_distance = 20.0;
-    double max_distance = 35.0;
+    double max_distance = 40.0;
     double min_angle = -15.0;
     double max_angle = 15.0;
     double distance = min_distance + static_cast<double>(std::rand()) / (static_cast<double>(RAND_MAX) / (max_distance - min_distance));
@@ -212,12 +212,7 @@ class Robot {
         }
     
     void stepTo(Point newPos) {
-        //the robot will move to the new position but will need to reorient itself first based on the angle to the new position and then move forward to the new position
-        // Implementation for reorientation and movement
-        orientation = atan2(newPos.row - position.row, newPos.col - position.col) * (180.0 / 3.14159265358979323846);
-        //move + 1 in the direction of the new position.
-        position = point{position.row + (newPos.row - position.row) / std::max(1, std::abs(newPos.row - position.row)), 
-                         position.col + (newPos.col - position.col) / std::max(1, std::abs(newPos.col - position.col))};
+        
     }
 
-}
+};
