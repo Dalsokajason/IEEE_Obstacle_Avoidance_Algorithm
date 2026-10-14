@@ -4,6 +4,8 @@
 #include <random>
 #include <cmath>
 #include <ctime>
+#include <thread>
+#include <chrono>
 
 using namespace std;
 
@@ -25,11 +27,13 @@ struct AStarNode {
 
 //declarations so code works
 void generateRandomObstacle(vector<vector<int>>& mapMatrix);
+Point averageObstaclePosition(vector<vector<int>>& mapMatrix);
+void searchState(vector<vector<int>>& mapMatrix);
 
 int main(){
 
-    int rows = 50;
-    int cols = 50;
+    int rows = 78;
+    int cols = 78;
     
     //this seeds the random number generator with current time
     srand(static_cast<unsigned int>(time(nullptr)));
@@ -48,20 +52,22 @@ int main(){
     mapMatrix[rows/2][cols - 1] = 2; // Goal
     
     for(int i = 0; i < 150; i++){
-        generateRandomObstacle(mapMatrix);
-        cout << "Obstacle " << i + 1 << " generated." << endl;
+        //generateRandomObstacle(mapMatrix);
+        //cout << "Obstacle " << i + 1 << " generated." << endl;
     }
 
-    //set the start and goal points for the A* algorithm the point is structured as {row, col}
-    Point start = {rows/2, 0};
-    Point goal = {rows/2, cols - 1};
+    searchState(mapMatrix);
 
-    vector<Point> path = a_star_occupancy_grid(mapMatrix, start, goal);
+    //set the start and goal points for the A* algorithm the point is structured as {row, col}
+    //Point start = {rows/2, 0};
+    //Point goal = {rows/2, cols - 1};
+
+    //vector<Point> path = a_star_occupancy_grid(mapMatrix, start, goal);
 
     //print out the path found by the A* algorithm NOT USING
-    if (path.empty()) {
+    //if (path.empty()) {
         //cout << "No path found!" << endl;
-    } else {
+    //} else {
         //cout << "Path found: " << endl;
         //for (const auto& pt : path) {
             //mapMatrix[pt.row][pt.col] = 7; // Mark path on the map as 7s
@@ -70,7 +76,7 @@ int main(){
             //std::this_thread::sleep_for(std::chrono::seconds(1));
         //}
         //cout << "Goal" << endl;
-    }
+    //}
 
     //print out the matrix
     for(int i = 0; i < rows; i++){
@@ -84,13 +90,13 @@ int main(){
     return 0;
 }
 
-void generateRandomObstacle(vector<vector<int>>& mapMatrix) {
+void generateRandomObstacle(vector<vector<int>>& mapMatrix, int min_distance, int max_distance, int min_angle, int max_angle) {
     int rows = mapMatrix.size();
     int cols = mapMatrix[0].size();
-    double min_distance = 20.0;
-    double max_distance = 40.0;
-    double min_angle = -15.0;
-    double max_angle = 15.0;
+    //double min_distance = 20.0;
+    //double max_distance = 40.0;
+    //double min_angle = -15.0;
+    //double max_angle = 15.0;
     double distance = min_distance + static_cast<double>(std::rand()) / (static_cast<double>(RAND_MAX) / (max_distance - min_distance));
     double angle = min_angle + static_cast<double>(std::rand()) / (static_cast<double>(RAND_MAX) / (max_angle - min_angle));
     double pi = 3.14159265358979323846;
@@ -98,7 +104,7 @@ void generateRandomObstacle(vector<vector<int>>& mapMatrix) {
     double x = distance * cos(angle_rad);
     double y = distance * sin(angle_rad);
     
-    cout << "x = " << x << ", y = " << y << endl;
+    //cout << "x = " << x << ", y = " << y << endl;
     // Obstacle position is set to x and y coord, but -1 on each to account for 0 indexing in the matrix
     mapMatrix[static_cast<int>(rows/2 + (round(y) - 1))][static_cast<int>(round(x) - 1)] = 1; // 1 denotes an obstacle
 }
@@ -109,28 +115,50 @@ double euclidean_heuristic(int r1, int c1, int r2, int c2) {
 }
 
 // Main A* Search algorithm for an occupancy grid
-void SumoAlgorithm(vector<vector<int>>& mapMatrix) {
+void searchState(vector<vector<int>>& mapMatrix) {
     int rows = mapMatrix.size();
     int cols = mapMatrix[0].size();
 
     //calculate the average position of the obstacles in the mapMatrix
     //Search State
+    for(int i = 0; i < 150; i++){
+        generateRandomObstacle(mapMatrix, 20, 30, 5, 35);
+    }
     Point prev_avgObstaclePos = averageObstaclePosition(mapMatrix);
+    cout << "Previous average obstacle position: (" << prev_avgObstaclePos.row << ", " << prev_avgObstaclePos.col << ")" << endl;
     //wait for 0.5 seconds before calculating the average position of the obstacles again
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    srand(static_cast<unsigned int>(time(nullptr)));
+    for(int i = 0; i < 150; i++){
+        generateRandomObstacle(mapMatrix, 20, 30, -35, -5);
+    }
     Point curr_avgObstaclePos = averageObstaclePosition(mapMatrix);
+    cout << "Current average obstacle position: (" << curr_avgObstaclePos.row << ", " << curr_avgObstaclePos.col << ")" << endl;
 
     //calculate the difference between the previous average position and the current average position
     int deltaRow = curr_avgObstaclePos.row - prev_avgObstaclePos.row;
     int deltaCol = curr_avgObstaclePos.col - prev_avgObstaclePos.col;
-    vector<Point> opponentMovement = {prev_avgObstaclePos, curr_avgObstaclePos};
+    //vector<Point> opponentMovement = {prev_avgObstaclePos, curr_avgObstaclePos};
 
     //create a vector perpendicular to the opponentMovement vector
-    Point perpendicularVector = {deltaCol, -deltaRow};
-
+    Point perpendicularVector = {2 * deltaCol, -2 * deltaRow};
+    cout << "Perpendicular vector: (" << perpendicularVector.row << ", " << perpendicularVector.col << ")" << endl;
     //create a point at the perpendicular vector from the current average position of the obstacles
     Point targetPoint = {curr_avgObstaclePos.row + perpendicularVector.row, curr_avgObstaclePos.col + perpendicularVector.col};
-
+    cout << "Target point: (" << targetPoint.row << ", " << targetPoint.col << ")" << endl;
+    //mark the target point on the mapMatrix as 3
+    if (targetPoint.row >= 0 && targetPoint.row < rows && targetPoint.col >= 0 && targetPoint.col < cols) {
+            mapMatrix[targetPoint.row][targetPoint.col] = 3; // 3 denotes the target point
+        }
+    //get the magnitude and direction of the target point from the start point (rows/2, 0)
+    int startRow = rows / 2;
+    int startCol = 0;
+    int deltaTargetRow = targetPoint.row - startRow;
+    int deltaTargetCol = targetPoint.col - startCol;
+    double magnitude = std::sqrt(std::pow(deltaTargetRow, 2) + std::pow(deltaTargetCol, 2));
+    double direction = std::atan2(deltaTargetRow, deltaTargetCol) * (180.0 / 3.14159265358979323846);
+    cout << "Magnitude: " << magnitude << ", Direction: " << direction << endl;
+    
 }
 
 Point averageObstaclePosition(vector<vector<int>>& mapMatrix) {
