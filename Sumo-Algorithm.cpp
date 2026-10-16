@@ -28,12 +28,18 @@ struct AStarNode {
 //declarations so code works
 void generateRandomObstacle(vector<vector<int>>& mapMatrix);
 Point averageObstaclePosition(vector<vector<int>>& mapMatrix);
-void searchState(vector<vector<int>>& mapMatrix);
+void searchState(vector<vector<int>>& mapMatrix, Point targetPoint);
+void flankState(vector<vector<int>>& mapMatrix, Point targetPoint);
+void combatState(vector<vector<int>>& mapMatrix);
+void alignToOpponent(vector<vector<int>>& mapMatrix);
+void scanMap(vector<vector<int>>& mapMatrix);
 
 int main(){
 
     int rows = 78;
     int cols = 78;
+
+    Point targetPoint = {0, 0}; // Initialize targetPoint
     
     //this seeds the random number generator with current time
     srand(static_cast<unsigned int>(time(nullptr)));
@@ -56,27 +62,11 @@ int main(){
         //cout << "Obstacle " << i + 1 << " generated." << endl;
     }
 
-    searchState(mapMatrix);
+    searchState(mapMatrix, targetPoint);
 
-    //set the start and goal points for the A* algorithm the point is structured as {row, col}
-    //Point start = {rows/2, 0};
-    //Point goal = {rows/2, cols - 1};
-
-    //vector<Point> path = a_star_occupancy_grid(mapMatrix, start, goal);
-
-    //print out the path found by the A* algorithm NOT USING
-    //if (path.empty()) {
-        //cout << "No path found!" << endl;
-    //} else {
-        //cout << "Path found: " << endl;
-        //for (const auto& pt : path) {
-            //mapMatrix[pt.row][pt.col] = 7; // Mark path on the map as 7s
-            //cout << "(" << pt.row << ", " << pt.col << ") -> ";
-            //wait for 1 second before printing the next point
-            //std::this_thread::sleep_for(std::chrono::seconds(1));
-        //}
-        //cout << "Goal" << endl;
-    //}
+    flankState(mapMatrix, targetPoint);
+    
+    combatState(mapMatrix);
 
     //print out the matrix
     for(int i = 0; i < rows; i++){
@@ -114,37 +104,52 @@ double euclidean_heuristic(int r1, int c1, int r2, int c2) {
     return std::sqrt(std::pow(r1 - r2, 2) + std::pow(c1 - c2, 2));
 }
 
-// Main A* Search algorithm for an occupancy grid
-void searchState(vector<vector<int>>& mapMatrix) {
+//
+void searchState(vector<vector<int>>& mapMatrix, Point targetPoint) {
     int rows = mapMatrix.size();
     int cols = mapMatrix[0].size();
 
     //calculate the average position of the obstacles in the mapMatrix
     //Search State
     for(int i = 0; i < 150; i++){
-        generateRandomObstacle(mapMatrix, 20, 30, 5, 35);
+        generateRandomObstacle(mapMatrix, 35, 40, 5, 35); //simulating scanninng the previous position of the opponent bot.
     }
-    Point prev_avgObstaclePos = averageObstaclePosition(mapMatrix);
+    //Point prev_avgObstaclePos = averageObstaclePosition(mapMatrix);
+    //Just for testing purposes, we will use fixed values for the previous average position of the obstacles
+    Point prev_avgObstaclePos = {rows/2, 1}; // Initialize to the start point for testing
+    mapMatrix[prev_avgObstaclePos.row][prev_avgObstaclePos.col] = 4; // 4 denotes the average position of the obstacles
     cout << "Previous average obstacle position: (" << prev_avgObstaclePos.row << ", " << prev_avgObstaclePos.col << ")" << endl;
-    //wait for 0.5 seconds before calculating the average position of the obstacles again
-    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+
+    //make sure to clear the mapMatrix of previous obstacles and opponent bot positions before generating new ones
+    for (int i = 0; i < mapMatrix.size(); ++i) {
+        for (int j = 0; j < mapMatrix[0].size(); ++j) {
+            if (mapMatrix[i][j] == 1) { // 1 denotes an obstacle
+                mapMatrix[i][j] = 0; // Clear previous obstacles and target point
+            }
+        }
+    }
+
+    //NVM, NOT USING DELAY FOR OPPONENT MOVEMENT VECTOR wait for 0.5 seconds before calculating the average position of the obstacles again
+    //std::this_thread::sleep_for(std::chrono::milliseconds(500));
     srand(static_cast<unsigned int>(time(nullptr)));
     for(int i = 0; i < 150; i++){
-        generateRandomObstacle(mapMatrix, 20, 30, -35, -5);
+        generateRandomObstacle(mapMatrix, 25, 30, -35, -5); //simulating scanning the current position of the opponent bot.
     }
     Point curr_avgObstaclePos = averageObstaclePosition(mapMatrix);
+    mapMatrix[curr_avgObstaclePos.row][curr_avgObstaclePos.col] = 4; // 4 denotes the current average position of the obstacles
     cout << "Current average obstacle position: (" << curr_avgObstaclePos.row << ", " << curr_avgObstaclePos.col << ")" << endl;
 
     //calculate the difference between the previous average position and the current average position
     int deltaRow = curr_avgObstaclePos.row - prev_avgObstaclePos.row;
     int deltaCol = curr_avgObstaclePos.col - prev_avgObstaclePos.col;
-    //vector<Point> opponentMovement = {prev_avgObstaclePos, curr_avgObstaclePos};
+    Point opponentMovement = {deltaRow, deltaCol};
+    cout << "Opponent movement vector: (" << deltaRow << ", " << deltaCol << ")" << endl;
 
     //create a vector perpendicular to the opponentMovement vector
-    Point perpendicularVector = {2 * deltaCol, -2 * deltaRow};
+    Point perpendicularVector = {1 * deltaCol, -1 * deltaRow};
     cout << "Perpendicular vector: (" << perpendicularVector.row << ", " << perpendicularVector.col << ")" << endl;
     //create a point at the perpendicular vector from the current average position of the obstacles
-    Point targetPoint = {curr_avgObstaclePos.row + perpendicularVector.row, curr_avgObstaclePos.col + perpendicularVector.col};
+    targetPoint = {curr_avgObstaclePos.row + perpendicularVector.row, curr_avgObstaclePos.col + perpendicularVector.col};
     cout << "Target point: (" << targetPoint.row << ", " << targetPoint.col << ")" << endl;
     //mark the target point on the mapMatrix as 3
     if (targetPoint.row >= 0 && targetPoint.row < rows && targetPoint.col >= 0 && targetPoint.col < cols) {
@@ -157,8 +162,124 @@ void searchState(vector<vector<int>>& mapMatrix) {
     int deltaTargetCol = targetPoint.col - startCol;
     double magnitude = std::sqrt(std::pow(deltaTargetRow, 2) + std::pow(deltaTargetCol, 2));
     double direction = std::atan2(deltaTargetRow, deltaTargetCol) * (180.0 / 3.14159265358979323846);
-    cout << "Magnitude: " << magnitude << ", Direction: " << direction << endl;
+    cout << "Target point" << " magnitude: " << magnitude << ", direction: " << direction << " degrees" << endl;
     
+}
+
+void flankState(vector<vector<int>>& mapMatrix, Point targetPoint) {
+    int rows = mapMatrix.size();
+    int cols = mapMatrix[0].size();
+
+    //get the magnitude and direction of the target point from the start point (rows/2, 0)
+    int startRow = rows / 2;
+    int startCol = 0;
+    int deltaTargetRow = targetPoint.row - startRow;
+    int deltaTargetCol = targetPoint.col - startCol;
+    double magnitude = std::sqrt(std::pow(deltaTargetRow, 2) + std::pow(deltaTargetCol, 2));
+    double direction = std::atan2(deltaTargetRow, deltaTargetCol) * (180.0 / 3.14159265358979323846);
+    
+    //turn the robot to face the target point
+    //angleDist() is Haydens function that outputs the angle of the robot from origin
+    //while (angleDist() != direction) {
+        //if (angleDist() < direction) {
+            //turnToRight(100);
+        //} else {
+            //turnToLeft(100);
+        //}
+    //}
+
+    //make robot move forward to the target point
+    //cartDist is Haydens function that outputs the distance of the robot from origin
+    //while (cartDist() < magnitude) {
+    //    moveForward(100);
+    //}
+
+    //turn the robot 180 degrees to face the opponent bot
+    //while (angleDist() != direction + 180) {
+        //if (angleDist() < direction + 180) {
+            //turnToRight(100);
+        //} else {
+            //turnToLeft(100);
+        //}
+    //}
+}
+
+void combatState(vector<vector<int>>& mapMatrix) {
+    int minAngle = -15;
+    int maxAngle = 15;
+    //the robot is now presummably facing the opponent bot and is at its side. This function will make the robot move forward to push the opponent bot out of the ring.
+    
+    //run this function every 1 second for as long as the robot is not more than 70 cm away from the origin which is found by using the cartDist() function. This is to make sure that the robot does not go out of bounds of the ring.
+    //if robot is too far move backwards
+
+    //while (cartDist() < 70) {
+        //move forward at 100 speed for 1 second
+        //moveForward(100);
+        //std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+        //stop the robot
+        //stopMoving();
+        //scan the map to update the positions of the obstacles and the opponent bot
+        //scanMap(mapMatrix);
+        //align the robot to face the opponent bot's average obstacle position  
+        //alignToOpponent(mapMatrix);
+    //}
+    //while (cartDist() >= 70) {
+        //move backwards at 100 speed for 2 second
+        //moveBackward(100);
+        //std::this_thread::sleep_for(std::chrono::milliseconds(2000));
+        //stop the robot
+        //stopMoving();
+        //scan the map to update the positions of the obstacles and the opponent bot
+        //scanMap(mapMatrix);
+        //align the robot to face the opponent bot's average obstacle position  
+        //alignToOpponent(mapMatrix);
+    //}
+
+
+
+}
+
+void alignToOpponent(vector<vector<int>>& mapMatrix) {
+    // This function will align the robot to face the opponent bot's average obstacle position.
+    //we need to rescan the map to update the positions of the obstacles and the opponent bot
+    scanMap(mapMatrix);
+
+    Point avgObstaclePos = averageObstaclePosition(mapMatrix);
+    if (avgObstaclePos.row != 0 || avgObstaclePos.col != 0) {
+        // Calculate the angle to the average obstacle position
+        int deltaRow = avgObstaclePos.row - (mapMatrix.size() / 2); // Assuming bot is at center row
+        int deltaCol = avgObstaclePos.col - 0; // Assuming bot is at column 0
+        double angleToOpponent = std::atan2(deltaRow, deltaCol) * (180.0 / 3.14159265358979323846);
+
+        // Adjust orientation to face the opponent bot
+        //while (angleDist() != angleToOpponent) {
+            //if (angleDist() < angleToOpponent) {
+                //turnToRight(100);
+            //} else {
+                //turnToLeft(100);
+            //}
+        //}
+    }
+}
+
+void scanMap(vector<vector<int>>& mapMatrix) {
+    //this function will scan the map and update the positions of the obstacles and the opponent bot
+    //for now we will just generate random obstacles to simulate the scanning of the map
+
+    //make sure to clear the mapMatrix of previous obstacles and opponent bot positions before generating new ones
+    for (int i = 0; i < mapMatrix.size(); ++i) {
+        for (int j = 0; j < mapMatrix[0].size(); ++j) {
+            if (mapMatrix[i][j] == 1 || mapMatrix[i][j] == 4 || mapMatrix[i][j] == 3) { // 1 denotes an obstacle, 4 denotes the average position of the obstacles, 3 denotes the target point
+                mapMatrix[i][j] = 0; // Clear previous obstacles and target point
+            }
+        }
+    }
+
+    //TOF FUNCTION HERE
+
+    for(int i = 0; i < 150; i++){
+        generateRandomObstacle(mapMatrix, 10, 40, -35, 35);
+    }
 }
 
 Point averageObstaclePosition(vector<vector<int>>& mapMatrix) {
@@ -187,21 +308,21 @@ Point averageObstaclePosition(vector<vector<int>>& mapMatrix) {
     return {obstacleRowSum / obstacleCount, obstacleColSum / obstacleCount};
 }
 
-class Robot {
-    private:
-        Point position;
-        double orientation; // in degrees
+//class Robot {
+//    private:
+//        Point position;
+//        double orientation; // in degrees
 
-    public:
-        Robot(Point startPos, double startOrientation) {
+//    public:
+//        Robot(Point startPos, double startOrientation) {
             //start position will be manually given for now, but will be fed from the imu in the future
-            position = startPos;
+//            position = startPos;
             //we will feed this info from the imu
-            orientation = startOrientation;
-        }
+//            orientation = startOrientation;
+//        }
     
-    void stepTo(Point newPos) {
+//    void stepTo(Point newPos) {
         
-    }
+//    }
 
-};
+//};
