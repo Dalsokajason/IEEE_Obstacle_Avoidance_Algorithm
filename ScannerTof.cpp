@@ -46,16 +46,19 @@ int main() {
     //double distance = min_distance + static_cast<double>(std::rand()) / (static_cast<double>(RAND_MAX) / (max_distance - min_distance));
     //double angle = min_angle + static_cast<double>(std::rand()) / (static_cast<double>(RAND_MAX) / (max_angle - min_angle));
 
+    
     vector<vector<int>> mapMatrix(rows, vector<int>(cols, free_cost));
     mapMatrix[rows/2][0] = 2; // Start point
     mapMatrix[rows/2][cols - 1] = 2; // Goal
-    
+
+    //THIS RIGHT HERE WILL SIMULATE THE SCANNING OF THE OPPONENT BOT AND OBSTACLES. FOR NOW WE WILL JUST GENERATE RANDOM OBSTACLES TO SIMULATE THE SCANNING OF THE MAP!!!11!1!
+    //Need to create a function from IR scanner that will create obstacles in the mapMatrix based on the distance and angle of the obstacles detected by the IR scanner.
     for(int i = 0; i < 300; i++){
-        generateRandomObstacle(mapMatrix, 20, 35, -25, -5);
+        generateRandomObstacle(mapMatrix, 20, 35, -45, -5); //Obstacle 1
     }
 
     for(int i = 0; i < 300; i++){
-        generateRandomObstacle(mapMatrix, 20, 35, 25, 45);
+        //generateRandomObstacle(mapMatrix, 20, 35, 5, 45); //Obstacle 2
     }
 
     //Inlfate the cost map around obstacles
@@ -88,13 +91,13 @@ int main() {
     for(int i = 0; i < rows; i++){
         for (int j = 0; j < cols; j++){
             if(mapMatrix[i][j] == occupied_cost) {
-                std::cout << "██ "; // Sharp wall visualization
+                cout << "██ "; // Sharp wall visualization
             } else if(mapMatrix[i][j] == 7) {
-                std::cout << "·· "; // Clean path trail tracker
+                cout << "·· "; // Clean path trail tracker
             } else if(mapMatrix[i][j] > free_cost) {
-                std::cout << "▒▒ "; // Shaded buffer cost safety zone
+                cout << "▒▒ "; // Shaded buffer cost safety zone
             } else {
-                std::cout << "   "; // Free completely wide-open floor space
+                cout << " 0 "; // Free completely wide-open floor space
             }
         }
         std::cout << std::endl;
@@ -131,7 +134,7 @@ void inflateObstacles(vector<vector<int>>& mapMatrix) {
     int rows = mapMatrix.size();
     int cols = mapMatrix[0].size();
     
-    // Make a duplicate snapshot copy to read from so inflation actions don't infinitely feed back
+    // Make a duplicate copy to read from so inflation actions don't infinitely feed back
     vector<vector<int>> tempMap = mapMatrix;
 
     for (int r = 0; r < rows; ++r) {
@@ -146,14 +149,14 @@ void inflateObstacles(vector<vector<int>>& mapMatrix) {
                         
                         // Check bounds limits
                         if (nr >= 0 && nr < rows && nc >= 0 && nc < cols) {
-                            if (tempMap[nr][nc] == occupied_cost) continue; // Skip actual walls
+                            if (tempMap[nr][nc] == occupied_cost) continue; // Skip de walls
                             
                             // Euclidean distance to source wall cell
                             double distance = std::sqrt(dr*dr + dc*dc);
                             if (distance <= inflation_radius) {
                                 // Linear degradation cost formula: Closer to wall = higher step price penalty
-                                int inflationCost = static_cast<int>((1.0 - (distance / (inflation_radius + 1))) * 40);
-                                
+                                //int inflationCost = static_cast<int>((1.0 - (distance / (inflation_radius + 1))) * 40);
+                                int inflationCost = 50;                               
                                 // Retain the highest risk assessment value if multiple obstacles overlap
                                 if (inflationCost > mapMatrix[nr][nc]) {
                                     mapMatrix[nr][nc] = inflationCost;
@@ -161,8 +164,7 @@ void inflateObstacles(vector<vector<int>>& mapMatrix) {
                             }
                         }
                     }
-                }
-                
+                } 
             }
         }
     }
