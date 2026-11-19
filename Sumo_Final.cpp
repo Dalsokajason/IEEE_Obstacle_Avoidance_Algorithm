@@ -315,12 +315,13 @@ void loop() {
       //cout << "Obstacle " << i + 1 << " generated." << endl;
   }
   
-  searchState(mapMatrix, targetPoint);
+  searchState(mapMatrix, targetPoint); //spend some time looking for the 
   //delay(1000);
   flankState(mapMatrix, targetPoint);
   //delay(1000);
   combatState(mapMatrix);
   //delay(1000);
+    
   //print out the matrix
   for(int i = 0; i < rows; i++){
       for (int j = 0; j < cols; j++){
@@ -329,27 +330,18 @@ void loop() {
       std::cout << std::endl;
   }
 }
-int main(){
-  //there is no war in ba sing se
-    return 0;
-}
 
 void generateRandomObstacle(vector<vector<int>>& mapMatrix, int min_distance, int max_distance, int min_angle, int max_angle) {
     int rows = mapMatrix.size();
     int cols = mapMatrix[0].size();
-    //double min_distance = 20.0;
-    //double max_distance = 40.0;
-    //double min_angle = -15.0;
-    //double max_angle = 15.0;
+
     double distance = min_distance + static_cast<double>(std::rand()) / (static_cast<double>(RAND_MAX) / (max_distance - min_distance));
     double angle = min_angle + static_cast<double>(std::rand()) / (static_cast<double>(RAND_MAX) / (max_angle - min_angle));
     double pi = 3.14159265358979323846;
     double angle_rad = angle * (pi / 180.0);
     double x = distance * cos(angle_rad);
     double y = distance * sin(angle_rad);
-    
-    //cout << "x = " << x << ", y = " << y << endl;
-    // Obstacle position is set to x and y coord, but -1 on each to account for 0 indexing in the matrix
+
     mapMatrix[static_cast<int>(rows/2 + (round(y) - 1))][static_cast<int>(round(x) - 1)] = 1; // 1 denotes an obstacle
 }
 
@@ -358,66 +350,66 @@ double euclidean_heuristic(int r1, int c1, int r2, int c2) {
     return std::sqrt(std::pow(r1 - r2, 2) + std::pow(c1 - c2, 2));
 }
 
-//jarvis
+//jarvis,
 void searchState(vector<vector<int>>& mapMatrix, Point targetPoint) {
-    int rows = mapMatrix.size();
-    int cols = mapMatrix[0].size();
-
-    //calculate the average position of the obstacles in the mapMatrix
-    //Search State
-    for(int i = 0; i < 150; i++){
-        generateRandomObstacle(mapMatrix, 35, 40, 5, 35); //simulating scanninng the previous position of the opponent bot.
-    }
-    //Point prev_avgObstaclePos = averageObstaclePosition(mapMatrix);
-    //Just for testing purposes, we will use fixed values for the previous average position of the obstacles
-    Point prev_avgObstaclePos = {rows/2, 1}; // Initialize to the start point for testing
-    mapMatrix[prev_avgObstaclePos.row][prev_avgObstaclePos.col] = 4; // 4 denotes the average position of the obstacles
-    cout << "Previous average obstacle position: (" << prev_avgObstaclePos.row << ", " << prev_avgObstaclePos.col << ")" << endl;
-
-    //make sure to clear the mapMatrix of previous obstacles and opponent bot positions before generating new ones
-    for (int i = 0; i < mapMatrix.size(); ++i) {
-        for (int j = 0; j < mapMatrix[0].size(); ++j) {
-            if (mapMatrix[i][j] == 1) { // 1 denotes an obstacle
-                mapMatrix[i][j] = 0; // Clear previous obstacles and target point
-            }
-        }
-    }
-
-    //NVM, NOT USING DELAY FOR OPPONENT MOVEMENT VECTOR wait for 0.5 seconds before calculating the average position of the obstacles again
-    //std::this_thread::sleep_for(std::chrono::milliseconds(500));
-    srand(static_cast<unsigned int>(time(nullptr)));
-    for(int i = 0; i < 150; i++){
-        generateRandomObstacle(mapMatrix, 25, 30, -35, -5); //simulating scanning the current position of the opponent bot.
-    }
-    Point curr_avgObstaclePos = averageObstaclePosition(mapMatrix);
-    mapMatrix[curr_avgObstaclePos.row][curr_avgObstaclePos.col] = 4; // 4 denotes the current average position of the obstacles
-    cout << "Current average obstacle position: (" << curr_avgObstaclePos.row << ", " << curr_avgObstaclePos.col << ")" << endl;
-
-    //calculate the difference between the previous average position and the current average position
-    int deltaRow = curr_avgObstaclePos.row - prev_avgObstaclePos.row;
-    int deltaCol = curr_avgObstaclePos.col - prev_avgObstaclePos.col;
-    Point opponentMovement = {deltaRow, deltaCol};
-    cout << "Opponent movement vector: (" << deltaRow << ", " << deltaCol << ")" << endl;
-
-    //create a vector perpendicular to the opponentMovement vector
-    Point perpendicularVector = {1 * deltaCol, -1 * deltaRow};
-    cout << "Perpendicular vector: (" << perpendicularVector.row << ", " << perpendicularVector.col << ")" << endl;
-    //create a point at the perpendicular vector from the current average position of the obstacles
-    targetPoint = {curr_avgObstaclePos.row + perpendicularVector.row, curr_avgObstaclePos.col + perpendicularVector.col};
-    cout << "Target point: (" << targetPoint.row << ", " << targetPoint.col << ")" << endl;
-    //mark the target point on the mapMatrix as 3
-    if (targetPoint.row >= 0 && targetPoint.row < rows && targetPoint.col >= 0 && targetPoint.col < cols) {
-            mapMatrix[targetPoint.row][targetPoint.col] = 3; // 3 denotes the target point
-        }
-    //get the magnitude and direction of the target point from the start point (rows/2, 0)
     int startRow = rows / 2;
     int startCol = 0;
-    int deltaTargetRow = targetPoint.row - startRow;
-    int deltaTargetCol = targetPoint.col - startCol;
-    double magnitude = std::sqrt(std::pow(deltaTargetRow, 2) + std::pow(deltaTargetCol, 2));
-    double direction = std::atan2(deltaTargetRow, deltaTargetCol) * (180.0 / 3.14159265358979323846);
-    cout << "Target point" << " magnitude: " << magnitude << ", direction: " << direction << " degrees" << endl;
+    while(targetPoint == {0, 0}) {
+        int rows = mapMatrix.size();
+        int cols = mapMatrix[0].size();
+        for(int i = 0; i < 150; i++){
+            //generateRandomObstacle(mapMatrix, 35, 40, 5, 35); //simulating scanninng the previous position of the opponent bot.
+        }
+        //Point prev_avgObstaclePos = averageObstaclePosition(mapMatrix);
+        //Just for testing purposes, me will use fixed values for the previous average position of the obstacles
+        Point prev_avgObstaclePos = {rows/2, 1}; // Initialize to the start point for testing
+        mapMatrix[prev_avgObstaclePos.row][prev_avgObstaclePos.col] = 4; // 4 denotes the average position of the obstacles
+        //cout << "Previous average obstacle position: (" << prev_avgObstaclePos.row << ", " << prev_avgObstaclePos.col << ")" << endl;
     
+        //make sure to clear the mapMatrix of previous obstacles and opponent bot positions before generating new ones
+        for (int i = 0; i < mapMatrix.size(); ++i) {
+            for (int j = 0; j < mapMatrix[0].size(); ++j) {
+                if (mapMatrix[i][j] == 1) { // 1 denotes an obstacle
+                    mapMatrix[i][j] = 0; // Clear previous obstacles and target point
+                }
+            }
+        }
+    
+        //NVM, NOT USING DELAY FOR OPPONENT MOVEMENT VECTOR wait for 0.5 seconds before calculating the average position of the obstacles again
+        //std::this_thread::sleep_for(std::chrono::milliseconds(500));
+        srand(static_cast<unsigned int>(time(nullptr)));
+        for(int i = 0; i < 150; i++){
+            generateRandomObstacle(mapMatrix, 25, 30, -35, -5); //simulating scanning the current position of the opponent bot.
+        }
+        Point curr_avgObstaclePos = averageObstaclePosition(mapMatrix);
+        mapMatrix[curr_avgObstaclePos.row][curr_avgObstaclePos.col] = 4; // 4 denotes the current average position of the obstacles
+        cout << "Current average obstacle position: (" << curr_avgObstaclePos.row << ", " << curr_avgObstaclePos.col << ")" << endl;
+    
+        //calculate the difference between the previous average position and the current average position
+        //int deltaRow = curr_avgObstaclePos.row - prev_avgObstaclePos.row;
+        //int deltaCol = curr_avgObstaclePos.col - prev_avgObstaclePos.col;
+        int deltaRow = curr_avgObstaclePos.row - startRow;
+        int detlaCol = curr_avgObstaclePos.col - startCol;
+        cout << "delta movement vector: (" << deltaRow << ", " << deltaCol << ")" << endl;
+    
+        //create a vector perpendicular to the opponentMovement vector
+        Point perpendicularVector = {1 * deltaCol, -1 * deltaRow};
+        cout << "Perpendicular vector: (" << perpendicularVector.row << ", " << perpendicularVector.col << ")" << endl;
+        //create a point at the perpendicular vector from the current average position of the obstacles
+        targetPoint = {curr_avgObstaclePos.row + perpendicularVector.row, curr_avgObstaclePos.col + perpendicularVector.col};
+        cout << "Target point: (" << targetPoint.row << ", " << targetPoint.col << ")" << endl;
+        //mark the target point on the mapMatrix as 3
+        if (targetPoint.row >= 0 && targetPoint.row < rows && targetPoint.col >= 0 && targetPoint.col < cols) {
+                mapMatrix[targetPoint.row][targetPoint.col] = 3; // 3 denotes the target point
+        }
+        
+        //get the magnitude and direction of the target point from the start point (rows/2, 0)
+        int deltaTargetRow = targetPoint.row - startRow;
+        int deltaTargetCol = targetPoint.col - startCol;
+        double magnitude = std::sqrt(std::pow(deltaTargetRow, 2) + std::pow(deltaTargetCol, 2));
+        double direction = std::atan2(deltaTargetRow, deltaTargetCol) * (180.0 / 3.14159265358979323846);
+        cout << "Target point" << " magnitude: " << magnitude << ", direction: " << direction << " degrees" << endl;
+    }
 }
 
 void flankState(vector<vector<int>>& mapMatrix, Point targetPoint) {
