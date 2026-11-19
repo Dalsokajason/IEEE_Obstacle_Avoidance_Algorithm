@@ -307,22 +307,3 @@ Point averageObstaclePosition(vector<vector<int>>& mapMatrix) {
 
     return {obstacleRowSum / obstacleCount, obstacleColSum / obstacleCount};
 }
-
-//class Robot {
-//    private:
-//        Point position;
-//        double orientation; // in degrees
-
-//    public:
-//        Robot(Point startPos, double startOrientation) {
-            //start position will be manually given for now, but will be fed from the imu in the future
-//            position = startPos;
-            //we will feed this info from the imu
-//            orientation = startOrientation;
-//        }
-    
-//    void stepTo(Point newPos) {
-        
-//    }
-
-//};
