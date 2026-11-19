@@ -316,11 +316,11 @@ void loop() {
   }
   
   searchState(mapMatrix, targetPoint);
-  
+  //delay(1000);
   flankState(mapMatrix, targetPoint);
-  
+  //delay(1000);
   combatState(mapMatrix);
-  
+  //delay(1000);
   //print out the matrix
   for(int i = 0; i < rows; i++){
       for (int j = 0; j < cols; j++){
